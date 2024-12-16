@@ -93,6 +93,17 @@ pub fn quick_sort<T: PartialOrd + Debug>(v: &mut [T]) {
     quick_sort(&mut b[1..]);
 }
 
+pub fn quick_sort_rayon<T: Send + PartialOrd + Debug>(v: &mut [T]) {
+    if v.len() <= 1 {
+        return;
+    }
+    let p = pivot(v);
+
+    let (a, b) = v.split_at_mut(p);
+
+    rayon::join(|| quick_sort_rayon(a), || quick_sort_rayon(&mut b[1..]));
+}
+
 struct RawSend<T>(*mut [T]);
 
 unsafe impl<T> Send for RawSend<T> {}
@@ -159,6 +170,17 @@ mod tests {
 
         let mut v = vec![1, 2, 6, 7, 9, 12, 13, 14];
         quick_sort(&mut v);
+        assert_eq!(v, vec![1, 2, 6, 7, 9, 12, 13, 14]);
+    }
+
+    #[test]
+    fn test_quick_sort_rayon() {
+        let mut v = vec![4, 6, 1, 8, 11, 13, 3];
+        quick_sort_rayon(&mut v);
+        assert_eq!(v, vec![1, 3, 4, 6, 8, 11, 13]);
+
+        let mut v = vec![1, 2, 6, 7, 9, 12, 13, 14];
+        quick_sort_rayon(&mut v);
         assert_eq!(v, vec![1, 2, 6, 7, 9, 12, 13, 14]);
     }
 
